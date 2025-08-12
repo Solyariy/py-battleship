@@ -102,3 +102,5 @@ class Battleship:
                 ship = self.field.get(current_cord)
                 if ship and ship != current_ship:
                     raise ValueError("Wrong ship placement")
+                if ship and abs(_row) == abs(_col):
+                    raise ValueError("Ship can't be placed diagonally")
