@@ -42,13 +42,63 @@ class Ship:
 
 class Battleship:
     def __init__(self, ships: list[tuple]) -> None:
-        self.field = {}
+        self.field: dict[tuple, Ship] = {}
         for row in ships:
             ship = Ship(*row)
             for deck in ship.decks:
-                self.field[deck.row, deck.column] = ship
+                self.field[(deck.row, deck.column)] = ship
+        self._validate_field()
+
+    def print_field(self) -> None:
+        to_print = ["Battleship field"]
+        for row in range(10):
+            row_print = []
+            for column in range(10):
+                icon = "~"
+                if ship := self.field.get((row, column)):
+                    if ship.is_drowned:
+                        icon = "x"
+                    elif not ship.get_deck(row, column).is_alive:
+                        icon = "*"
+                    else:
+                        icon = u"\u25A1"
+                row_print.append(icon)
+            to_print.append(" ".join(row_print))
+        print("\n".join(to_print))
 
     def fire(self, location: tuple[int, int]) -> str:
         if ship := self.field.get(location):
             return ship.fire(*location)
         return "Miss!"
+
+    def _validate_field(self) -> None:
+        self._validate_range()
+        self._validate_types_count()
+        self._validate_collisions()
+
+    def _validate_range(self) -> None:
+        for key in self.field:
+            if not (0 <= key[0] < 10 and 0 <= key[1] < 10):
+                raise ValueError("Coordinates can't exceed [0, 9] range")
+
+    def _validate_types_count(self) -> None:
+        counter = [0] * 4
+        for ship in set(self.field.values()):
+            length = len(ship.decks)
+            if length > 4:
+                raise ValueError("Length should not exceed 4")
+            counter[length - 1] += 1
+        if counter != [4, 3, 2, 1]:
+            raise ValueError("Wrong number of ships")
+
+    def _validate_collisions(self) -> None:
+        for (row, column), current_ship in self.field.items():
+            combinations = [
+                (1, 0), (1, 1), (0, 1), (-1, 1),
+                (-1, 0), (-1, -1), (0, -1)
+            ]
+            for _row, _col in combinations:
+                current_cord = row + _row, column + _col
+                ship = self.field.get(current_cord)
+                if ship and ship != current_ship:
+                    raise ValueError("Wrong ship placement")
